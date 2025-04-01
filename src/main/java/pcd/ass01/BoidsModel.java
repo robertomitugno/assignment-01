@@ -14,6 +14,7 @@ public class BoidsModel {
     private final double maxSpeed;
     private final double perceptionRadius;
     private final double avoidRadius;
+    private int boidsCount;
 
     public BoidsModel(double initialSeparationWeight,
                       double initialAlignmentWeight,
@@ -31,18 +32,12 @@ public class BoidsModel {
         this.maxSpeed = maxSpeed;
         this.perceptionRadius = perceptionRadius;
         this.avoidRadius = avoidRadius;
-
-        // Initialize empty list of boids
         boids = new ArrayList<>();
     }
 
-    /**
-     * Creates the specified number of boids with random positions and velocities
-     *
-     * @param nboids the number of boids to create
-     */
     public synchronized void createBoids(int nboids) {
-        // Create new boids with random positions and velocities
+        this.boidsCount = nboids;
+        boids.clear();
         for (int i = 0; i < nboids; i++) {
         	P2d pos = new P2d(-width/2 + Math.random() * width, -height/2 + Math.random() * height);
         	V2d vel = new V2d(Math.random() * maxSpeed/2 - maxSpeed/4, Math.random() * maxSpeed/2 - maxSpeed/4);
@@ -112,5 +107,9 @@ public class BoidsModel {
 
     public double getPerceptionRadius() {
     	return perceptionRadius;
+    }
+
+    public synchronized void resetBoids() {
+        createBoids(boidsCount);
     }
 }

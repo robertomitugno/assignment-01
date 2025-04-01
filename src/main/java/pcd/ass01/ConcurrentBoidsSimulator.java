@@ -9,9 +9,11 @@ public class ConcurrentBoidsSimulator {
     private final BoidsModel model;
     private final int numThreads;
     private volatile boolean running;
+    private volatile boolean paused;
+    private final Object pauseLock = new Object();
     private Optional<BoidsView> view;
     private List<BoidsWorker> workers;
-    private SyncWorkersMonitor syncMonitor;
+    private Coordinator syncMonitor;
     private WorkerBarrier workerBarrier;
 
     private static final int FRAMERATE = 25;
@@ -21,26 +23,77 @@ public class ConcurrentBoidsSimulator {
         this.model = model;
         this.numThreads = numThreads;
         this.running = false;
+        this.paused = false;
         this.view = Optional.empty();
     }
 
     public void attachView(BoidsView view) {
         this.view = Optional.of(view);
+        view.setSimulator(this);
     }
 
     public void runSimulation() {
+        if (running) return;  // Already running
+
         running = true;
-        syncMonitor = new SyncWorkersMonitor(numThreads);
+        paused = false;
+        syncMonitor = new Coordinator(numThreads);
         workerBarrier = new WorkerBarrier(numThreads);
         workers = new ArrayList<>();
 
-        int boidsForThread = model.getBoids().size() / numThreads;
-        int remainingBoids = model.getBoids().size() % numThreads;
+        createAndStartWorkers();
+        runMainSimulationLoop();
+
+        // After stopping the simulation, ensure all workers are terminated
+        syncMonitor.coordinatorDone();
+
+    }
+
+    public void stopSimulation() {
+        running = false;
+
+        synchronized (pauseLock) {
+            paused = false;
+            pauseLock.notifyAll();
+        }
+
+        if (workers != null) {
+            for (BoidsWorker worker : workers) {
+                worker.terminate();
+                try {
+                    worker.join();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            workers = null;
+        }
+
+        // Reset monitors and barriers
+        if (syncMonitor != null) {
+            syncMonitor.reset();
+        }
+
+        if (workerBarrier != null) {
+            workerBarrier.reset();
+        }
+
+        model.setCohesionWeight(1.0);
+        model.setSeparationWeight(1.0);
+        model.setAlignmentWeight(1.0);
+
+        model.resetBoids();
+    }
+
+    private void createAndStartWorkers() {
+        int totalBoids = model.getBoids().size();
+        int boidsPerThread = totalBoids / numThreads;
+        int remainingBoids = totalBoids % numThreads;
 
         int startIndex = 0;
         for (int i = 0; i < numThreads; i++) {
-            int count = boidsForThread + (i < remainingBoids ? 1 : 0);
-            int endIndex = startIndex + count;
+            int boidsForThisThread = boidsPerThread + (i < remainingBoids ? 1 : 0);
+            int endIndex = startIndex + boidsForThisThread;
 
             BoidsWorker worker = new BoidsWorker(model, startIndex, endIndex, syncMonitor, workerBarrier);
             workers.add(worker);
@@ -48,47 +101,67 @@ public class ConcurrentBoidsSimulator {
 
             startIndex = endIndex;
         }
+    }
 
-        // Main simulation loop
+    private void runMainSimulationLoop() {
         while (running) {
-            // Wait for all worker threads to complete their updates
-            syncMonitor.waitWorkers();
-
-            var t0 = System.currentTimeMillis();
-
-            // Update view now that all position updates are complete
-            if (view.isPresent()) {
-                view.get().update(framerate);
-                var t1 = System.currentTimeMillis();
-                var dtElapsed = t1 - t0;
-                var frameratePeriod = 1000/FRAMERATE;
-
-                if (dtElapsed < frameratePeriod) {
+            synchronized (pauseLock) {
+                while (paused && running) {
                     try {
-                        Thread.sleep(frameratePeriod - dtElapsed);
-                    } catch (Exception ex) {
+                        pauseLock.wait();
+                    } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
+                        break;
                     }
-                    framerate = FRAMERATE;
-                } else {
-                    framerate = (int) (1000/dtElapsed);
+                }
+
+                if (!running) {
+                    break; // Exit if stopped during pause
                 }
             }
 
-            // Signal worker threads to start the next iteration
+            long frameStartTime = System.currentTimeMillis();
+
+            syncMonitor.waitWorkers();
+
+            updateViewAndManageFramerate(frameStartTime);
+
             syncMonitor.coordinatorDone();
         }
     }
 
-    public void stopSimulation() {
-        running = false;
-        for (BoidsWorker worker : workers) {
-            worker.terminate();
-            try {
-                worker.join();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+    private void updateViewAndManageFramerate(long t0) {
+        // Update view now that all position updates are complete
+        if (view.isPresent()) {
+            view.get().update(framerate);
+            var t1 = System.currentTimeMillis();
+            var dtElapsed = t1 - t0;
+            var frameratePeriod = 1000/FRAMERATE;
+
+            if (dtElapsed < frameratePeriod) {
+                try {
+                    Thread.sleep(frameratePeriod - dtElapsed);
+                } catch (Exception ex) {
+                    Thread.currentThread().interrupt();
+                }
+                framerate = FRAMERATE;
+            } else {
+                framerate = (int) (1000/dtElapsed);
             }
+        }
+    }
+
+
+    public void pauseSimulation() {
+        synchronized (pauseLock) {
+            paused = true;
+        }
+    }
+
+    public void resumeSimulation() {
+        synchronized (pauseLock) {
+            paused = false;
+            pauseLock.notifyAll();
         }
     }
 }

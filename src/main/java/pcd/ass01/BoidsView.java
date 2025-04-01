@@ -4,9 +4,11 @@ import javax.swing.*;
 import javax.swing.event.ChangeEvent;
 import javax.swing.event.ChangeListener;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.Hashtable;
 
-public class BoidsView implements ChangeListener {
+public class BoidsView implements ChangeListener, ActionListener {
 
 	private static final String START_LABEL = "START";
 	private static final String STOP_LABEL = "STOP";
@@ -16,9 +18,12 @@ public class BoidsView implements ChangeListener {
 	private JFrame frame;
 	private BoidsPanel boidsPanel;
 	private JSlider cohesionSlider, separationSlider, alignmentSlider;
+	private JButton startButton, stopButton, pauseButton, resumeButton;
+	private JPanel buttonsPanel;
 	private BoidsModel model;
+	private ConcurrentBoidsSimulator simulator;
 	private int width, height;
-	
+
 	public BoidsView(BoidsModel model, int width, int height) {
 		this.model = model;
 		this.width = width;
@@ -30,8 +35,14 @@ public class BoidsView implements ChangeListener {
 			model.createBoids(numberOfBoids);
 			initializeGUI();
 		} else {
-			System.exit(0); // Exit if user cancels or enters invalid input
+			System.exit(0);
 		}
+	}
+
+	public void setSimulator(ConcurrentBoidsSimulator simulator) {
+		this.simulator = simulator;
+		// Enable button from the beginning
+		enableButtonsBasedOnState(false, true, true, false);
 	}
 
 	private int promptForNumberOfBoids() {
@@ -41,7 +52,7 @@ public class BoidsView implements ChangeListener {
 					"Boids Simulation Setup",
 					JOptionPane.QUESTION_MESSAGE);
 
-			if (input == null) return -1; // User canceled
+			if (input == null) return -1; // User pressed cancel
 
 			try {
 				int value = Integer.parseInt(input);
@@ -62,25 +73,57 @@ public class BoidsView implements ChangeListener {
 
 	private void initializeGUI() {
 		frame = new JFrame("Boids Simulation");
-        frame.setSize(width, height);
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		frame.setSize(width, height);
+		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
 		JPanel mainPanel = new JPanel();
 		mainPanel.setLayout(new BorderLayout());
 
-		// Create sliders panel
 		JPanel controlPanel = createControlPanel();
 
-		// Create boids visualization panel
+		buttonsPanel = createButtonsPanel();
+
 		boidsPanel = new BoidsPanel(this, model);
 
 		// Add components to main panel
-		mainPanel.add(BorderLayout.CENTER, boidsPanel);
+		mainPanel.add(boidsPanel, BorderLayout.CENTER);
 		mainPanel.add(controlPanel, BorderLayout.SOUTH);
+		mainPanel.add(buttonsPanel, BorderLayout.NORTH);
 
 		frame.setContentPane(mainPanel);
 		frame.setVisible(true);
+	}
 
+	private JPanel createButtonsPanel() {
+		JPanel panel = new JPanel(new FlowLayout());
+		panel.setBackground(new Color(230, 230, 235));
+
+		startButton = new JButton(START_LABEL);
+		stopButton = new JButton(STOP_LABEL);
+		pauseButton = new JButton(PAUSE_LABEL);
+		resumeButton = new JButton(RESUME_LABEL);
+
+		startButton.addActionListener(this);
+		stopButton.addActionListener(this);
+		pauseButton.addActionListener(this);
+		resumeButton.addActionListener(this);
+
+		panel.add(startButton);
+		panel.add(pauseButton);
+		panel.add(resumeButton);
+		panel.add(stopButton);
+
+		// Initial button states
+		enableButtonsBasedOnState(true, false, true, false);
+
+		return panel;
+	}
+
+	private void enableButtonsBasedOnState(boolean start, boolean stop, boolean pause, boolean resume) {
+		startButton.setEnabled(start);
+		stopButton.setEnabled(stop);
+		pauseButton.setEnabled(pause);
+		resumeButton.setEnabled(resume);
 	}
 
 	private JPanel createControlPanel() {
@@ -90,7 +133,6 @@ public class BoidsView implements ChangeListener {
 		controlPanel.setPreferredSize(new Dimension(width, 275));
 		controlPanel.setBackground(new Color(230, 230, 235));
 
-		// Create each slider with its own panel
 		JPanel avoidancePanel = createSliderWithLabel("Separation:", "Low", "High");
 		separationSlider = createParameterSlider();
 		avoidancePanel.add(separationSlider);
@@ -103,7 +145,6 @@ public class BoidsView implements ChangeListener {
 		cohesionSlider = createParameterSlider();
 		groupingPanel.add(cohesionSlider);
 
-		// Add slider panels to control panel
 		controlPanel.add(Box.createVerticalStrut(10));
 		controlPanel.add(avoidancePanel);
 		controlPanel.add(Box.createVerticalStrut(10));
@@ -140,10 +181,10 @@ public class BoidsView implements ChangeListener {
 		labelTable.put( 20, new JLabel("2") );
 		slider.setLabelTable( labelTable );
 		slider.setPaintLabels(true);
-        slider.addChangeListener(this);
+		slider.addChangeListener(this);
 		return slider;
 	}
-	
+
 	public void update(int frameRate) {
 		boidsPanel.setFrameRate(frameRate);
 		boidsPanel.repaint();
@@ -162,7 +203,32 @@ public class BoidsView implements ChangeListener {
 			model.setAlignmentWeight(0.1*val);
 		}
 	}
-	
+
+	@Override
+	public void actionPerformed(ActionEvent e) {
+		JButton source = (JButton) e.getSource();
+
+		if (source == startButton) {
+			// Start the simulation in a new thread to avoid blocking the GUI
+			new Thread(() -> {
+				simulator.runSimulation();
+			}).start();
+			enableButtonsBasedOnState(false, true, true, false);
+		} else if (source == stopButton) {
+			simulator.stopSimulation();
+			cohesionSlider.setValue(10);
+			separationSlider.setValue(10);
+			alignmentSlider.setValue(10);
+			enableButtonsBasedOnState(true, false, false, false);
+		} else if (source == pauseButton) {
+			simulator.pauseSimulation();
+			enableButtonsBasedOnState(false, true, false, true);
+		} else if (source == resumeButton) {
+			simulator.resumeSimulation();
+			enableButtonsBasedOnState(false, true, true, false);
+		}
+	}
+
 	public int getWidth() {
 		return width;
 	}
@@ -170,5 +236,4 @@ public class BoidsView implements ChangeListener {
 	public int getHeight() {
 		return height;
 	}
-
 }

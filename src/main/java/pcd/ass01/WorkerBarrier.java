@@ -15,12 +15,12 @@ public class WorkerBarrier {
         count--;
 
         if (count == 0) {
-            // Ultimo thread arrivato alla barriera
+            // Last thread to arrive, reset the barrier
             count = totalWorkers;
             phase++;
             notifyAll();
         } else {
-            // Non è l'ultimo thread, attende che tutti arrivino
+            // Not the last thread, wait for others
             while (phase == workerPhase) {
                 try {
                     wait();
@@ -30,5 +30,11 @@ public class WorkerBarrier {
                 }
             }
         }
+    }
+
+    public synchronized void reset() {
+        count = totalWorkers;
+        phase++;
+        notifyAll();
     }
 }
