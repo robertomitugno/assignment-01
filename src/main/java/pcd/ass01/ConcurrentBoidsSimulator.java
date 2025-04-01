@@ -11,7 +11,8 @@ public class ConcurrentBoidsSimulator {
     private volatile boolean running;
     private Optional<BoidsView> view;
     private List<BoidsWorker> workers;
-    private Coordinator coordinator;
+    private SyncWorkersMonitor syncMonitor;
+    private WorkerBarrier workerBarrier;
 
     private static final int FRAMERATE = 25;
     private int framerate;
@@ -29,7 +30,8 @@ public class ConcurrentBoidsSimulator {
 
     public void runSimulation() {
         running = true;
-        coordinator = new Coordinator(numThreads);
+        syncMonitor = new SyncWorkersMonitor(numThreads);
+        workerBarrier = new WorkerBarrier(numThreads);
         workers = new ArrayList<>();
 
         int boidsForThread = model.getBoids().size() / numThreads;
@@ -40,7 +42,7 @@ public class ConcurrentBoidsSimulator {
             int count = boidsForThread + (i < remainingBoids ? 1 : 0);
             int endIndex = startIndex + count;
 
-            BoidsWorker worker = new BoidsWorker(model, startIndex, endIndex, coordinator);
+            BoidsWorker worker = new BoidsWorker(model, startIndex, endIndex, syncMonitor, workerBarrier);
             workers.add(worker);
             worker.start();
 
@@ -50,10 +52,11 @@ public class ConcurrentBoidsSimulator {
         // Main simulation loop
         while (running) {
             // Wait for all worker threads to complete their updates
-            coordinator.waitAllWorkers();
+            syncMonitor.waitWorkers();
 
             var t0 = System.currentTimeMillis();
 
+            // Update view now that all position updates are complete
             if (view.isPresent()) {
                 view.get().update(framerate);
                 var t1 = System.currentTimeMillis();
@@ -73,7 +76,7 @@ public class ConcurrentBoidsSimulator {
             }
 
             // Signal worker threads to start the next iteration
-            coordinator.coordinatorDone();
+            syncMonitor.coordinatorDone();
         }
     }
 
