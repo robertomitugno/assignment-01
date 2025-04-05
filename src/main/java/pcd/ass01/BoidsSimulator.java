@@ -1,6 +1,9 @@
 package pcd.ass01;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.*;
 
 public class BoidsSimulator {
 
@@ -9,41 +12,42 @@ public class BoidsSimulator {
     
     private static final int FRAMERATE = 25;
     private int framerate;
-    
-    public BoidsSimulator(BoidsModel model) {
+
+    private ExecutorService executor;
+
+    private Latch latch;
+
+    public BoidsSimulator(BoidsModel model, int numThreads) {
         this.model = model;
         view = Optional.empty();
+        executor = Executors.newFixedThreadPool(numThreads);
     }
 
     public void attachView(BoidsView view) {
     	this.view = Optional.of(view);
     }
-      
-    public void runSimulation() {
-    	while (true) {
+
+    public void runSimulation() throws InterruptedException {
+        var boids = model.getBoids();
+        latch = new Latch(boids.size());
+
+        while (true) {
             var t0 = System.currentTimeMillis();
-    		var boids = model.getBoids();
-    		/*
-    		for (Boid boid : boids) {
-                boid.update(model);
-            }
-            */
-    		
-    		/* 
-    		 * Improved correctness: first update velocities...
-    		 */
-    		for (Boid boid : boids) {
-                boid.updateVelocity(model);
+
+            for(Boid boid: boids) {
+                executor.execute(new TaskVelocity(boid, model, latch));
             }
 
-    		/* 
-    		 * ..then update positions
-    		 */
-    		for (Boid boid : boids) {
-                boid.updatePos(model);
+            latch.await();
+            latch.reset(boids.size());
+
+            for(Boid boid: boids) {
+                executor.execute(new TaskPosition(boid, model, latch));
             }
 
-            
+            latch.await();
+            latch.reset(boids.size());
+
     		if (view.isPresent()) {
             	view.get().update(framerate);
             	var t1 = System.currentTimeMillis();
@@ -59,7 +63,7 @@ public class BoidsSimulator {
                 	framerate = (int) (1000/dtElapsed);
                 }
     		}
-            
+
     	}
     }
 }

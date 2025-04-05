@@ -15,10 +15,10 @@ public class BoidsSimulation {
     static final double AVOID_RADIUS = 20.0;
 
 	final static int SCREEN_WIDTH = 800; 
-	final static int SCREEN_HEIGHT = 800; 
-	
+	final static int SCREEN_HEIGHT = 800;
+	final static int NUM_THREADS = Runtime.getRuntime().availableProcessors() + 1;
 
-    public static void main(String[] args) {      
+    public static void main(String[] args) throws InterruptedException {
     	var model = new BoidsModel(
     					N_BOIDS, 
     					SEPARATION_WEIGHT, ALIGNMENT_WEIGHT, COHESION_WEIGHT, 
@@ -26,7 +26,7 @@ public class BoidsSimulation {
     					MAX_SPEED,
     					PERCEPTION_RADIUS,
     					AVOID_RADIUS); 
-    	var sim = new BoidsSimulator(model);
+    	var sim = new BoidsSimulator(model, NUM_THREADS);
     	var view = new BoidsView(model, SCREEN_WIDTH, SCREEN_HEIGHT);
     	sim.attachView(view);
     	sim.runSimulation();
