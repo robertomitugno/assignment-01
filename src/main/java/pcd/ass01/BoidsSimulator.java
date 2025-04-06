@@ -1,69 +1,76 @@
 package pcd.ass01;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.*;
 
-public class BoidsSimulator {
+public final class BoidsSimulator {
 
-    private BoidsModel model;
-    private Optional<BoidsView> view;
-    
     private static final int FRAMERATE = 25;
+
+    private final BoidsModel model;
+    private final ExecutorService executor;
+    private Optional<BoidsView> view = Optional.empty();
     private int framerate;
 
-    private ExecutorService executor;
-
-    private Latch latch;
-
-    public BoidsSimulator(BoidsModel model, int numThreads) {
+    public BoidsSimulator(final BoidsModel model, final int numThreads) {
         this.model = model;
-        view = Optional.empty();
-        executor = Executors.newFixedThreadPool(numThreads);
+        this.executor = Executors.newFixedThreadPool(numThreads);
     }
 
-    public void attachView(BoidsView view) {
-    	this.view = Optional.of(view);
-    }
-
-    public void runSimulation() throws InterruptedException {
-        var boids = model.getBoids();
-        latch = new Latch(boids.size());
+    public void runSimulation() {
+        final var boids = model.getBoids();
+        var latch = new Latch(boids.size());
 
         while (true) {
-            var t0 = System.currentTimeMillis();
+            final var t0 = System.currentTimeMillis();
 
-            for(Boid boid: boids) {
-                executor.execute(new TaskVelocity(boid, model, latch));
+            for (final var boid : boids) {
+                final var updateVelocityTask = new UpdateBoidTask(boid, model, latch, UpdateBoidTask.Mode.VELOCITY);
+                this.executor.execute(updateVelocityTask);
             }
 
-            latch.await();
-            latch.reset(boids.size());
-
-            for(Boid boid: boids) {
-                executor.execute(new TaskPosition(boid, model, latch));
+            try {
+                latch.await();
+            } catch (InterruptedException ignored) {
+            } finally {
+                latch = new Latch(boids.size());
             }
 
-            latch.await();
-            latch.reset(boids.size());
+            for (final var boid : boids) {
+                final var updatePositionTask = new UpdateBoidTask(boid, model, latch, UpdateBoidTask.Mode.POSITION);
+                executor.execute(updatePositionTask);
+            }
 
-    		if (view.isPresent()) {
-            	view.get().update(framerate);
-            	var t1 = System.currentTimeMillis();
-                var dtElapsed = t1 - t0;
-                var framratePeriod = 1000/FRAMERATE;
-                
-                if (dtElapsed < framratePeriod) {		
-                	try {
-                		Thread.sleep(framratePeriod - dtElapsed);
-                	} catch (Exception ex) {}
-                	framerate = FRAMERATE;
-                } else {
-                	framerate = (int) (1000/dtElapsed);
+            try {
+                latch.await();
+            } catch (InterruptedException ignored) {
+            } finally {
+                latch = new Latch(boids.size());
+            }
+
+            this.renderBoids(t0);
+        }
+    }
+
+    public void attachView(final BoidsView view) {
+        this.view = Optional.of(view);
+    }
+
+    private void renderBoids(final long t0) {
+        if (view.isPresent()) {
+            this.view.get().update(this.framerate);
+            final var t1 = System.currentTimeMillis();
+            final var dtElapsed = t1 - t0;
+            final var frameratePeriod = 1000 / FRAMERATE;
+            if (dtElapsed < frameratePeriod) {
+                try {
+                    Thread.sleep(frameratePeriod - dtElapsed);
+                } catch (Exception ignored) {
                 }
-    		}
-
-    	}
+                this.framerate = FRAMERATE;
+            } else {
+                this.framerate = (int) (1000 / dtElapsed);
+            }
+        }
     }
 }

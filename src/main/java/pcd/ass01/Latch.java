@@ -1,48 +1,23 @@
 package pcd.ass01;
 
-public class Latch {
-    private int count;
-    private final Object lock = new Object();
+public final class Latch {
 
+    private int counter;
 
-    public Latch(int count) {
-        this.count = count;
+    public Latch(final int numTasks) {
+        this.counter = numTasks;
     }
 
-    public void countDown() {
-        synchronized (lock) {
-            if (count > 0) {
-                count--;
-                if (count == 0) {
-
-                    lock.notifyAll();
-                }
-            }
+    public synchronized void countDown() {
+        this.counter--;
+        if (this.counter == 0) {
+            this.notify();
         }
     }
 
-    public void await() throws InterruptedException {
-        synchronized (lock) {
-            while (count > 0) {
-                lock.wait();
-            }
-        }
-    }
-
-    public void reset(int count) {
-        synchronized (lock) {
-            this.count = count;
-        }
-    }
-
-    /**
-     * Returns the current count.
-     *
-     * @return the current count
-     */
-    public int getCount() {
-        synchronized (lock) {
-            return count;
+    public synchronized void await() throws InterruptedException {
+        while (this.counter > 0) {
+            this.wait();
         }
     }
 }
