@@ -10,16 +10,10 @@ import java.util.Hashtable;
 
 public class BoidsView implements ChangeListener, ActionListener {
 
-	private static final String START_LABEL = "START";
-	private static final String STOP_LABEL = "STOP";
-	private static final String PAUSE_LABEL = "PAUSE";
-	private static final String RESUME_LABEL = "RESUME";
-
 	private JFrame frame;
 	private BoidsPanel boidsPanel;
 	private JSlider cohesionSlider, separationSlider, alignmentSlider;
 	private JButton startButton, stopButton, pauseButton, resumeButton;
-	private JPanel buttonsPanel;
 	private BoidsModel model;
 	private ConcurrentBoidsSimulator simulator;
 	private int width, height;
@@ -29,7 +23,6 @@ public class BoidsView implements ChangeListener, ActionListener {
 		this.width = width;
 		this.height = height;
 
-		// Ask for number of boids before showing the main GUI
 		int numberOfBoids = promptForNumberOfBoids();
 		if (numberOfBoids > 0) {
 			model.createBoids(numberOfBoids);
@@ -41,29 +34,33 @@ public class BoidsView implements ChangeListener, ActionListener {
 
 	public void setSimulator(ConcurrentBoidsSimulator simulator) {
 		this.simulator = simulator;
-		// Enable button from the beginning
-		enableButtonsBasedOnState(false, true, true, false);
+		enableButtonsBasedOnState(SimulationState.STOPPED);
+	}
+
+	public void update(int frameRate) {
+		boidsPanel.setFrameRate(frameRate);
+		boidsPanel.repaint();
 	}
 
 	private int promptForNumberOfBoids() {
 		while (true) {
-			String input = JOptionPane.showInputDialog(null,
+			String input = JOptionPane.showInputDialog(frame,
 					"Enter the number of boids for the simulation:",
 					"Boids Simulation Setup",
 					JOptionPane.QUESTION_MESSAGE);
 
-			if (input == null) return -1; // User pressed cancel
+			if (input == null) return -1;
 
 			try {
 				int value = Integer.parseInt(input);
 				if (value > 0) return value;
 
-				JOptionPane.showMessageDialog(null,
+				JOptionPane.showMessageDialog(frame,
 						"Please enter a positive number of boids.",
 						"Invalid Input",
 						JOptionPane.ERROR_MESSAGE);
 			} catch (NumberFormatException ex) {
-				JOptionPane.showMessageDialog(null,
+				JOptionPane.showMessageDialog(frame,
 						"Please enter a valid number.",
 						"Invalid Input",
 						JOptionPane.ERROR_MESSAGE);
@@ -79,13 +76,10 @@ public class BoidsView implements ChangeListener, ActionListener {
 		JPanel mainPanel = new JPanel();
 		mainPanel.setLayout(new BorderLayout());
 
-		JPanel controlPanel = createControlPanel();
-
-		buttonsPanel = createButtonsPanel();
-
+		JPanel controlPanel = createBehaviorPanel();
+		JPanel buttonsPanel = createButtonsPanel();
 		boidsPanel = new BoidsPanel(this, model);
 
-		// Add components to main panel
 		mainPanel.add(boidsPanel, BorderLayout.CENTER);
 		mainPanel.add(controlPanel, BorderLayout.SOUTH);
 		mainPanel.add(buttonsPanel, BorderLayout.NORTH);
@@ -98,10 +92,10 @@ public class BoidsView implements ChangeListener, ActionListener {
 		JPanel panel = new JPanel(new FlowLayout());
 		panel.setBackground(new Color(230, 230, 235));
 
-		startButton = new JButton(START_LABEL);
-		stopButton = new JButton(STOP_LABEL);
-		pauseButton = new JButton(PAUSE_LABEL);
-		resumeButton = new JButton(RESUME_LABEL);
+		startButton = new JButton("START");
+		stopButton = new JButton("STOP");
+		pauseButton = new JButton("PAUSE");
+		resumeButton = new JButton("RESUME");
 
 		startButton.addActionListener(this);
 		stopButton.addActionListener(this);
@@ -113,20 +107,39 @@ public class BoidsView implements ChangeListener, ActionListener {
 		panel.add(resumeButton);
 		panel.add(stopButton);
 
-		// Initial button states
-		enableButtonsBasedOnState(true, false, true, false);
+		enableButtonsBasedOnState(SimulationState.STOPPED);
 
 		return panel;
 	}
 
-	private void enableButtonsBasedOnState(boolean start, boolean stop, boolean pause, boolean resume) {
-		startButton.setEnabled(start);
-		stopButton.setEnabled(stop);
-		pauseButton.setEnabled(pause);
-		resumeButton.setEnabled(resume);
+	private enum SimulationState {
+		STOPPED, RUNNING, PAUSED
 	}
 
-	private JPanel createControlPanel() {
+	private void enableButtonsBasedOnState(SimulationState state) {
+		switch (state) {
+			case STOPPED:
+				startButton.setEnabled(true);
+				stopButton.setEnabled(false);
+				pauseButton.setEnabled(false);
+				resumeButton.setEnabled(false);
+				break;
+			case RUNNING:
+				startButton.setEnabled(false);
+				stopButton.setEnabled(true);
+				pauseButton.setEnabled(true);
+				resumeButton.setEnabled(false);
+				break;
+			case PAUSED:
+				startButton.setEnabled(false);
+				stopButton.setEnabled(true);
+				pauseButton.setEnabled(false);
+				resumeButton.setEnabled(true);
+				break;
+		}
+	}
+
+	private JPanel createBehaviorPanel() {
 		JPanel controlPanel = new JPanel();
 		controlPanel.setLayout(new BoxLayout(controlPanel, BoxLayout.Y_AXIS));
 		controlPanel.setBorder(BorderFactory.createTitledBorder("Behavior Controls"));
@@ -175,32 +188,29 @@ public class BoidsView implements ChangeListener, ActionListener {
 		slider.setMinorTickSpacing(1);
 		slider.setPaintTicks(true);
 		slider.setPaintLabels(true);
-		Hashtable labelTable = new Hashtable<>();
-		labelTable.put( 0, new JLabel("0") );
-		labelTable.put( 10, new JLabel("1") );
-		labelTable.put( 20, new JLabel("2") );
-		slider.setLabelTable( labelTable );
+
+		Hashtable<Integer, JLabel> labelTable = new Hashtable<>();
+		labelTable.put(0, new JLabel("0"));
+		labelTable.put(10, new JLabel("1"));
+		labelTable.put(20, new JLabel("2"));
+		slider.setLabelTable(labelTable);
+
 		slider.setPaintLabels(true);
 		slider.addChangeListener(this);
 		return slider;
 	}
 
-	public void update(int frameRate) {
-		boidsPanel.setFrameRate(frameRate);
-		boidsPanel.repaint();
-	}
-
 	@Override
 	public void stateChanged(ChangeEvent e) {
-		if (e.getSource() == separationSlider) {
-			var val = separationSlider.getValue();
-			model.setSeparationWeight(0.1*val);
-		} else if (e.getSource() == cohesionSlider) {
-			var val = cohesionSlider.getValue();
-			model.setCohesionWeight(0.1*val);
-		} else {
-			var val = alignmentSlider.getValue();
-			model.setAlignmentWeight(0.1*val);
+		JSlider source = (JSlider) e.getSource();
+		double value = source.getValue() * 0.1;
+
+		if (source == separationSlider) {
+			model.setSeparationWeight(value);
+		} else if (source == cohesionSlider) {
+			model.setCohesionWeight(value);
+		} else if (source == alignmentSlider) {
+			model.setAlignmentWeight(value);
 		}
 	}
 
@@ -209,24 +219,51 @@ public class BoidsView implements ChangeListener, ActionListener {
 		JButton source = (JButton) e.getSource();
 
 		if (source == startButton) {
-			// Start the simulation in a new thread to avoid blocking the GUI
-			new Thread(() -> {
-				simulator.runSimulation();
-			}).start();
-			enableButtonsBasedOnState(false, true, true, false);
+			startSimulation();
 		} else if (source == stopButton) {
-			simulator.stopSimulation();
-			cohesionSlider.setValue(10);
-			separationSlider.setValue(10);
-			alignmentSlider.setValue(10);
-			enableButtonsBasedOnState(true, false, false, false);
+			stopSimulation();
 		} else if (source == pauseButton) {
-			simulator.pauseSimulation();
-			enableButtonsBasedOnState(false, true, false, true);
+			pauseSimulation();
 		} else if (source == resumeButton) {
-			simulator.resumeSimulation();
-			enableButtonsBasedOnState(false, true, true, false);
+			resumeSimulation();
 		}
+	}
+
+	private void startSimulation() {
+		simulator.startSimulation();
+		enableButtonsBasedOnState(SimulationState.RUNNING);
+	}
+
+	private void stopSimulation() {
+		simulator.stopSimulation();
+		resetSimulation();
+	}
+
+	private void resetSimulation() {
+		int numberOfBoids = promptForNumberOfBoids();
+
+		if (numberOfBoids <= 0) {
+			enableButtonsBasedOnState(SimulationState.STOPPED);
+			return;
+		}
+
+		cohesionSlider.setValue(10);
+		separationSlider.setValue(10);
+		alignmentSlider.setValue(10);
+
+		model.createBoids(numberOfBoids);
+		boidsPanel.repaint();
+		enableButtonsBasedOnState(SimulationState.STOPPED);
+	}
+
+	private void pauseSimulation() {
+		simulator.pauseSimulation();
+		enableButtonsBasedOnState(SimulationState.PAUSED);
+	}
+
+	private void resumeSimulation() {
+		simulator.resumeSimulation();
+		enableButtonsBasedOnState(SimulationState.RUNNING);
 	}
 
 	public int getWidth() {

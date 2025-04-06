@@ -8,9 +8,7 @@ public class ConcurrentBoidsSimulator {
 
     private final BoidsModel model;
     private final int numThreads;
-    private volatile boolean running;
-    private volatile boolean paused;
-    private final Object pauseLock = new Object();
+    private StateManager stateManager;
     private Optional<BoidsView> view;
     private List<BoidsWorker> workers;
     private Coordinator syncMonitor;
@@ -22,9 +20,8 @@ public class ConcurrentBoidsSimulator {
     public ConcurrentBoidsSimulator(BoidsModel model, int numThreads) {
         this.model = model;
         this.numThreads = numThreads;
-        this.running = false;
-        this.paused = false;
         this.view = Optional.empty();
+        this.stateManager = new StateManager();
     }
 
     public void attachView(BoidsView view) {
@@ -33,30 +30,50 @@ public class ConcurrentBoidsSimulator {
     }
 
     public void runSimulation() {
-        if (running) return;  // Already running
+        while (true) {
+            waitUntilRunning();
 
-        running = true;
-        paused = false;
-        syncMonitor = new Coordinator(numThreads);
-        workerBarrier = new WorkerBarrier(numThreads);
-        workers = new ArrayList<>();
+            syncMonitor = new Coordinator(numThreads);
+            workerBarrier = new WorkerBarrier(numThreads);
+            workers = new ArrayList<>();
 
-        createAndStartWorkers();
-        runMainSimulationLoop();
+            createAndStartWorkers();
 
-        // After stopping the simulation, ensure all workers are terminated
-        syncMonitor.coordinatorDone();
+            while (stateManager.isRunning()) {
+                if (!stateManager.waitIfPaused()) {
+                    break;
+                }
 
+                long frameStartTime = System.currentTimeMillis();
+
+                // Attendi che tutti i worker completino i loro calcoli
+                syncMonitor.waitWorkers();
+
+                // Aggiorna la view e gestisci il framerate
+                updateViewAndManageFramerate(frameStartTime);
+
+                // Notifica ai worker che possono procedere con il prossimo frame
+                syncMonitor.coordinatorDone();
+            }
+
+            resetSimulation();
+        }
     }
 
-    public void stopSimulation() {
-        running = false;
-
-        synchronized (pauseLock) {
-            paused = false;
-            pauseLock.notifyAll();
+    private void waitUntilRunning() {
+        synchronized (stateManager) {
+            while (!stateManager.isRunning()) {
+                try {
+                    stateManager.wait();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
         }
+    }
 
+    private void resetSimulation() {
         if (workers != null) {
             for (BoidsWorker worker : workers) {
                 worker.terminate();
@@ -69,7 +86,6 @@ public class ConcurrentBoidsSimulator {
             workers = null;
         }
 
-        // Reset monitors and barriers
         if (syncMonitor != null) {
             syncMonitor.reset();
         }
@@ -103,35 +119,7 @@ public class ConcurrentBoidsSimulator {
         }
     }
 
-    private void runMainSimulationLoop() {
-        while (running) {
-            synchronized (pauseLock) {
-                while (paused && running) {
-                    try {
-                        pauseLock.wait();
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        break;
-                    }
-                }
-
-                if (!running) {
-                    break; // Exit if stopped during pause
-                }
-            }
-
-            long frameStartTime = System.currentTimeMillis();
-
-            syncMonitor.waitWorkers();
-
-            updateViewAndManageFramerate(frameStartTime);
-
-            syncMonitor.coordinatorDone();
-        }
-    }
-
     private void updateViewAndManageFramerate(long t0) {
-        // Update view now that all position updates are complete
         if (view.isPresent()) {
             view.get().update(framerate);
             var t1 = System.currentTimeMillis();
@@ -151,17 +139,22 @@ public class ConcurrentBoidsSimulator {
         }
     }
 
-
-    public void pauseSimulation() {
-        synchronized (pauseLock) {
-            paused = true;
+    public void startSimulation() {
+        synchronized (stateManager) {
+            stateManager.start();
+            stateManager.notifyAll();
         }
     }
 
+    public void stopSimulation() {
+        stateManager.stop();
+    }
+
+    public void pauseSimulation() {
+        stateManager.pause();
+    }
+
     public void resumeSimulation() {
-        synchronized (pauseLock) {
-            paused = false;
-            pauseLock.notifyAll();
-        }
+        stateManager.resume();
     }
 }
