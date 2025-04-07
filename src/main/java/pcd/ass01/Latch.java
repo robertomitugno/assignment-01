@@ -20,4 +20,16 @@ public final class Latch {
             this.wait();
         }
     }
+
+    public synchronized void reset(int numTasks) {
+        this.counter = numTasks;
+    }
+
+    public synchronized void cleanUp(int count) {
+        this.counter -= count;
+    }
+
+    public synchronized int getCount() {
+            return this.counter;
+    }
 }

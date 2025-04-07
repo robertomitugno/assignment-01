@@ -5,7 +5,7 @@ import java.util.List;
 
 public final class BoidsModel {
 
-    private final List<Boid> boids = new ArrayList<>();
+    private final List<Boid> boids;
     private double separationWeight;
     private double alignmentWeight;
     private double cohesionWeight;
@@ -14,9 +14,9 @@ public final class BoidsModel {
     private final double maxSpeed;
     private final double perceptionRadius;
     private final double avoidRadius;
+    private int boidsCount;
 
-    public BoidsModel(final int nboids,
-                      final double initialSeparationWeight,
+    public BoidsModel(final double initialSeparationWeight,
                       final double initialAlignmentWeight,
                       final double initialCohesionWeight,
                       final double width,
@@ -32,13 +32,17 @@ public final class BoidsModel {
         this.maxSpeed = maxSpeed;
         this.perceptionRadius = perceptionRadius;
         this.avoidRadius = avoidRadius;
+        boids = new ArrayList<>();
+    }
 
+    public synchronized void createBoids(int nboids) {
+        this.boidsCount = nboids;
+        boids.clear();
         for (int i = 0; i < nboids; i++) {
-            P2d pos = new P2d(-width / 2 + Math.random() * width, -height / 2 + Math.random() * height);
-            V2d vel = new V2d(Math.random() * maxSpeed / 2 - maxSpeed / 4, Math.random() * maxSpeed / 2 - maxSpeed / 4);
+            P2d pos = new P2d(-width/2 + Math.random() * width, -height/2 + Math.random() * height);
+            V2d vel = new V2d(Math.random() * maxSpeed/2 - maxSpeed/4, Math.random() * maxSpeed/2 - maxSpeed/4);
             boids.add(new Boid(pos, vel));
         }
-
     }
 
     public List<Boid> getBoids() { return boids; }
@@ -101,5 +105,9 @@ public final class BoidsModel {
 
     public double getPerceptionRadius() {
         return perceptionRadius;
+    }
+
+    public synchronized void resetBoids() {
+        createBoids(boidsCount);
     }
 }
