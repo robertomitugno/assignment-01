@@ -15,7 +15,7 @@ public class BoidsSimulation {
 	final static int SCREEN_WIDTH = 800;
 	final static int SCREEN_HEIGHT = 800;
 
-	final static int NUM_THREADS = Runtime.getRuntime().availableProcessors();
+	final static int NUM_THREADS = Runtime.getRuntime().availableProcessors() + 1;
 
 	public static void main(String[] args) {
 		var model = new BoidsModel(

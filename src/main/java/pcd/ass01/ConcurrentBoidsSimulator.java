@@ -76,7 +76,7 @@ public class ConcurrentBoidsSimulator {
     private void resetSimulation() {
         if (workers != null) {
             for (BoidsWorker worker : workers) {
-                worker.terminate();
+                worker.interrupt();
                 try {
                     worker.join();
                 } catch (InterruptedException e) {

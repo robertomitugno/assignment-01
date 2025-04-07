@@ -8,7 +8,6 @@ public class BoidsWorker extends Thread {
     private final int endIndex;
     private final Coordinator syncMonitor;
     private final WorkerBarrier workerBarrier;
-    private volatile boolean running = true;
 
     public BoidsWorker(BoidsModel model, int startIndex, int endIndex, Coordinator syncMonitor, WorkerBarrier workerBarrier) {
         this.model = model;
@@ -22,13 +21,13 @@ public class BoidsWorker extends Thread {
     public void run() {
         List<Boid> boids;
 
-        while (running) {
+        while (!isInterrupted()) {
             boids = model.getBoids();
 
             // Barrier #1: Wait for all workers to get the boids list
             workerBarrier.await();
 
-            if (!running) break;
+            if (isInterrupted()) break;
 
             // Update velocities of assigned boids
             for (int i = startIndex; i < endIndex && i < boids.size(); i++) {
@@ -38,7 +37,7 @@ public class BoidsWorker extends Thread {
             // Barrier #2: Wait for all workers to update velocities
             workerBarrier.await();
 
-            if (!running) break;
+            if (isInterrupted()) break;
 
             // Update positions of assigned boids
             for (int i = startIndex; i < endIndex && i < boids.size(); i++) {
@@ -48,12 +47,7 @@ public class BoidsWorker extends Thread {
             // Signal that work is done and wait for coordinator to signal next cycle
             syncMonitor.workDoneWaitCoordinator();
 
-            if (!running) break;
+            if (isInterrupted()) break;
         }
-    }
-
-    public void terminate() {
-        running = false;
-        interrupt(); // Interrupt if waiting at a barrier or monitor
     }
 }
