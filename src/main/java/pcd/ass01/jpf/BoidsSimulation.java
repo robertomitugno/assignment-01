@@ -1,4 +1,4 @@
-package jpf;
+package pcd.ass01.jpf;
 
 public class BoidsSimulation {
 

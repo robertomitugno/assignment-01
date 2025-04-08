@@ -1,4 +1,4 @@
-package jpf;
+package pcd.ass01.jpf;
 
 public class P2d {
     private final double x;
