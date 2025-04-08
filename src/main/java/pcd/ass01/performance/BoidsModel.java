@@ -14,8 +14,6 @@ public class BoidsModel {
     private final double maxSpeed;
     private final double perceptionRadius;
     private final double avoidRadius;
-    private int boidsCount;
-    private int nBoids;
 
     public BoidsModel(int nBoids,
                       double initialSeparationWeight,
@@ -34,13 +32,11 @@ public class BoidsModel {
         this.maxSpeed = maxSpeed;
         this.perceptionRadius = perceptionRadius;
         this.avoidRadius = avoidRadius;
-        this.nBoids = nBoids;
         boids = new ArrayList<>();
         createBoids(nBoids);
     }
 
     public synchronized void createBoids(int nboids) {
-        this.boidsCount = nboids;
         boids.clear();
         for (int i = 0; i < nboids; i++) {
             P2d pos = new P2d(-width/2 + Math.random() * width, -height/2 + Math.random() * height);

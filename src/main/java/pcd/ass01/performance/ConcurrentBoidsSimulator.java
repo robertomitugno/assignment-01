@@ -1,55 +1,53 @@
 package pcd.ass01.performance;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.Optional;
 
 public class ConcurrentBoidsSimulator {
 
     private final BoidsModel model;
-    private final int numThreads;
     private List<BoidsWorker> workers;
     private Coordinator syncMonitor;
     private WorkerBarrier workerBarrier;
 
-    private int maxCycles;
-    private int currentCycle = 0;
-    private List<Integer> framerates = new ArrayList<>();
+    private final int maxCycles;
+    private final List<List<Number>> performanceData = new ArrayList<>();
 
     private static final int DEFAULT_FRAMERATE = Integer.MAX_VALUE;
-    private int framerate;
+    private final int numThreads = Runtime.getRuntime().availableProcessors() + 1;
 
-    public ConcurrentBoidsSimulator(BoidsModel model, int numThreads, int maxCycles) {
+    public ConcurrentBoidsSimulator(BoidsModel model, int maxCycles) {
         this.model = model;
-        this.numThreads = numThreads;
         this.maxCycles = maxCycles;
     }
 
-    public List<Integer> runSimulation() {
-        framerates.clear();
-
-        // Inizializza la simulazione
-        syncMonitor = new Coordinator(numThreads);
-        workerBarrier = new WorkerBarrier(numThreads);
-        workers = new ArrayList<>();
-        createAndStartWorkers();
-
-        for(currentCycle = 0; currentCycle <= maxCycles; currentCycle++) {
+    public List<List<Number>> runSimulation() {
+        for(int currentCycle = 0; currentCycle <= maxCycles; currentCycle++) {
 
             long t0 = System.nanoTime();
+
+            syncMonitor = new Coordinator(numThreads);
+            workerBarrier = new WorkerBarrier(numThreads);
+            workers = new ArrayList<>();
+            createAndStartWorkers();
 
             syncMonitor.waitWorkers();
 
             long t1 = System.nanoTime();
-            double elapsedTimeMs = (t1 - t0) / 1_000_000.0; // Conversione a millisecondi
+            double elapsedTimeMs = (t1 - t0) / 1_000_000.0; // To milliseconds
 
-            // Se valore troppo basso
+            // If value too low
             if (elapsedTimeMs < 0.001) {
                 elapsedTimeMs = 0.001;
             }
 
-            // Calcola il framerate effettivo
-            framerate = (int)(1000.0 / elapsedTimeMs);
+            // Calculate the actual framerate
+            int framerate = (int) (1000.0 / elapsedTimeMs);
+
+            // Store both framerate and execution time in one list
+            // index 0: framerate, index 1: execution time
+            performanceData.add(Arrays.asList(framerate, elapsedTimeMs));
 
             var frameratePeriod = 1000.0 / DEFAULT_FRAMERATE;
             if (elapsedTimeMs < frameratePeriod) {
@@ -60,13 +58,10 @@ public class ConcurrentBoidsSimulator {
                 }
             }
 
-            framerates.add(framerate);
-
-
             syncMonitor.coordinatorDone();
         }
 
-        return framerates;
+        return performanceData;
     }
 
     private void createAndStartWorkers() {
