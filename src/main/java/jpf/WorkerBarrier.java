@@ -1,4 +1,4 @@
-package jpf.src;
+package jpf;
 
 public class WorkerBarrier {
     private final int totalWorkers;

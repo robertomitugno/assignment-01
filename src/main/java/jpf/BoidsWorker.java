@@ -1,4 +1,4 @@
-package jpf.src;
+package jpf;
 
 import java.util.List;
 

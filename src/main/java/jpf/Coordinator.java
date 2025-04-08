@@ -1,4 +1,4 @@
-package jpf.src;
+package jpf;
 
 public class Coordinator {
     private final int totalThreads;

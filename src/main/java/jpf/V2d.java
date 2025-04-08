@@ -1,4 +1,4 @@
-package jpf.src;
+package jpf;
 
 public class V2d {
     private final double x;

@@ -1,4 +1,4 @@
-package jpf.src;
+package jpf;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,9 +14,9 @@ public class BoidsModel {
     private final double maxSpeed;
     private final double perceptionRadius;
     private final double avoidRadius;
-    private int boidsCount;
+    private final int counterBoids;
 
-    public BoidsModel(int nBoids,
+    public BoidsModel(int counterBoids,
                       double initialSeparationWeight,
                       double initialAlignmentWeight,
                       double initialCohesionWeight,
@@ -33,14 +33,14 @@ public class BoidsModel {
         this.maxSpeed = maxSpeed;
         this.perceptionRadius = perceptionRadius;
         this.avoidRadius = avoidRadius;
+        this.counterBoids = counterBoids;
         boids = new ArrayList<>();
-        createBoids(nBoids);
+        createBoids();
     }
 
-    public synchronized void createBoids(int nboids) {
-        this.boidsCount = nboids;
+    public synchronized void createBoids() {
         boids.clear();
-        for (int i = 0; i < nboids; i++) {
+        for (int i = 0; i < this.counterBoids; i++) {
         	P2d pos = new P2d(-width/2 + Math.random() * width, -height/2 + Math.random() * height);
         	V2d vel = new V2d(Math.random() * maxSpeed/2 - maxSpeed/4, Math.random() * maxSpeed/2 - maxSpeed/4);
         	boids.add(new Boid(pos, vel));
@@ -109,9 +109,5 @@ public class BoidsModel {
 
     public double getPerceptionRadius() {
     	return perceptionRadius;
-    }
-
-    public synchronized void resetBoids() {
-        createBoids(boidsCount);
     }
 }

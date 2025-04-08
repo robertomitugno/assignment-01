@@ -1,7 +1,8 @@
-package jpf.src;
+package jpf;
 
 public class BoidsSimulation {
 
+	final static int N_BOIDS = 100;
 	final static double SEPARATION_WEIGHT = 1.0;
     final static double ALIGNMENT_WEIGHT = 1.0;
     final static double COHESION_WEIGHT = 1.0;
@@ -14,7 +15,7 @@ public class BoidsSimulation {
 	final static int NUM_THREADS = Runtime.getRuntime().availableProcessors() + 1;
 
 	public static void main(String[] args) {
-		BoidsModel model = new BoidsModel(10,
+		BoidsModel model = new BoidsModel(N_BOIDS,
 				SEPARATION_WEIGHT, ALIGNMENT_WEIGHT, COHESION_WEIGHT,
 				ENVIRONMENT_WIDTH, ENVIRONMENT_HEIGHT,
 				MAX_SPEED,
