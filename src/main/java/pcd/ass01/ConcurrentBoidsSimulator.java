@@ -102,7 +102,8 @@ public class ConcurrentBoidsSimulator {
     }
 
     private void createAndStartWorkers() {
-        int totalBoids = model.getBoids().size();
+        List<Boid> boids = model.getBoids();
+        int totalBoids = boids.size();
         int boidsPerThread = totalBoids / numThreads;
         int remainingBoids = totalBoids % numThreads;
 
@@ -111,7 +112,7 @@ public class ConcurrentBoidsSimulator {
             int boidsForThisThread = boidsPerThread + (i < remainingBoids ? 1 : 0);
             int endIndex = startIndex + boidsForThisThread;
 
-            BoidsWorker worker = new BoidsWorker(model, startIndex, endIndex, syncMonitor, workerBarrier);
+            BoidsWorker worker = new BoidsWorker(model, boids.subList(startIndex, endIndex) , syncMonitor, workerBarrier);
             workers.add(worker);
             worker.start();
 

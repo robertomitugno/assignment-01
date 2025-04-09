@@ -37,7 +37,7 @@ public class BoidsSimulation {
 
 		System.out.println("Starting test performance:");
 
-		for (Integer nBoid : N_BOIDS) {
+		for (int nBoid : N_BOIDS) {
 			System.out.println("\nTest with " + nBoid + " boids...");
 
 			var model = new BoidsModel(
