@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="f989c888-74c7-487c-a97a-63e4744743d4" name="Changes" comment="add performance">
+      <change beforePath="$PROJECT_DIR$/src/main/java/pcd/ass01/BoidsModel.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pcd/ass01/BoidsModel.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pcd/ass01/BoidsSimulation.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pcd/ass01/BoidsSimulation.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/pcd/ass01/BoidsSimulator.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/pcd/ass01/BoidsSimulator.java" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GithubPullRequestsUISettings"><![CDATA[{
+  "selectedUrlAndAccountId": {
+    "url": "https://github.com/robertomitugno/assignment-01.git",
+    "accountId": "1101b8a9-9c60-4ea1-9559-ad214ed8df45"
+  }
+}]]></component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.BoidsSimulation.executor": "Run",
+    "git-widget-placeholder": "sequential-perf",
+    "node.js.selected.package.tslint": "(autodetect)"
+  }
+}]]></component>
+  <component name="RunManager">
+    <configuration name="BoidsSimulation" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="pcd.ass01.BoidsSimulation" />
+      <module name="pcd-ass-01" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="pcd.ass01.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="JetRunConfigurationType">
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
+      <option name="filePath" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Application.BoidsSimulation" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="TaskManager">
+    <servers />
+  </component>
+</project>

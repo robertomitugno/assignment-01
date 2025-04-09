@@ -1,65 +1,64 @@
 package pcd.ass01;
 
-import java.util.Optional;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 public class BoidsSimulator {
 
     private BoidsModel model;
-    private Optional<BoidsView> view;
-    
-    private static final int FRAMERATE = 25;
-    private int framerate;
-    
-    public BoidsSimulator(BoidsModel model) {
+    private final int maxCycles;
+    private final List<List<Number>> performanceData = new ArrayList<>();
+    private static final int DEFAULT_FRAMERATE = Integer.MAX_VALUE;
+
+    public BoidsSimulator(final BoidsModel model, int maxCycles ) {
         this.model = model;
-        view = Optional.empty();
+        this.maxCycles = maxCycles;
     }
 
-    public void attachView(BoidsView view) {
-    	this.view = Optional.of(view);
-    }
-      
-    public void runSimulation() {
-    	while (true) {
-            var t0 = System.currentTimeMillis();
-    		var boids = model.getBoids();
-    		/*
-    		for (Boid boid : boids) {
-                boid.update(model);
-            }
-            */
-    		
-    		/* 
-    		 * Improved correctness: first update velocities...
-    		 */
-    		for (Boid boid : boids) {
+    public List<List<Number>> runSimulation() {
+        for(int currentCycle = 0; currentCycle <= maxCycles; currentCycle++) {
+            long t0 = System.nanoTime();
+            var boids = model.getBoids();
+
+            /*
+             * Improved correctness: first update velocities...
+             */
+            for (Boid boid : boids) {
                 boid.updateVelocity(model);
             }
 
-    		/* 
-    		 * ..then update positions
-    		 */
-    		for (Boid boid : boids) {
+            /*
+             * ..then update positions
+             */
+            for (Boid boid : boids) {
                 boid.updatePos(model);
             }
 
-            
-    		if (view.isPresent()) {
-            	view.get().update(framerate);
-            	var t1 = System.currentTimeMillis();
-                var dtElapsed = t1 - t0;
-                var framratePeriod = 1000/FRAMERATE;
-                
-                if (dtElapsed < framratePeriod) {		
-                	try {
-                		Thread.sleep(framratePeriod - dtElapsed);
-                	} catch (Exception ex) {}
-                	framerate = FRAMERATE;
-                } else {
-                	framerate = (int) (1000/dtElapsed);
+            long t1 = System.nanoTime();
+            double elapsedTimeMs = (t1 - t0) / 1_000_000.0; // To milliseconds
+
+            // If value too low
+            if (elapsedTimeMs < 0.001) {
+                elapsedTimeMs = 0.001;
+            }
+
+            // Calculate the actual framerate
+            int framerate = (int) (1000.0 / elapsedTimeMs);
+
+            // Store both framerate and execution time in one list
+            // index 0: framerate, index 1: execution time
+            performanceData.add(Arrays.asList(framerate, elapsedTimeMs));
+
+            var frameratePeriod = 1000.0 / DEFAULT_FRAMERATE;
+            if (elapsedTimeMs < frameratePeriod) {
+                try {
+                    Thread.sleep((long) (frameratePeriod - elapsedTimeMs));
+                } catch (Exception ex) {
+                    Thread.currentThread().interrupt();
                 }
-    		}
-            
-    	}
+            }
+        }
+        return performanceData;
     }
 }
