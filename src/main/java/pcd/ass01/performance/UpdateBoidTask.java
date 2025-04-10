@@ -1,5 +1,7 @@
 package pcd.ass01.performance;
 
+import pcd.ass01.Latch;
+
 public final class UpdateBoidTask implements Runnable {
 
     public enum Mode {

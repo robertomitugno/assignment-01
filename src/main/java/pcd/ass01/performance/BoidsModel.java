@@ -2,6 +2,8 @@ package pcd.ass01.performance;
 
 import java.util.ArrayList;
 import java.util.List;
+import pcd.ass01.P2d;
+import pcd.ass01.V2d;
 
 public class BoidsModel {
 
@@ -36,7 +38,7 @@ public class BoidsModel {
         createBoids(nBoids);
     }
 
-    public synchronized void createBoids(int nboids) {
+    public void createBoids(int nboids) {
         boids.clear();
         for (int i = 0; i < nboids; i++) {
             P2d pos = new P2d(-width/2 + Math.random() * width, -height/2 + Math.random() * height);
