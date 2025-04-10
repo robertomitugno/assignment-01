@@ -34,7 +34,7 @@ public final class BoidsModel {
         this.avoidRadius = avoidRadius;
     }
 
-    public synchronized void createBoids(final int numBoids) {
+    public void createBoids(final int numBoids) {
         this.boidsCount = numBoids;
         this.boids.clear();
         for (int i = 0; i < numBoids; i++) {
@@ -44,7 +44,7 @@ public final class BoidsModel {
         }
     }
 
-    public synchronized void resetBoids() {
+    public void resetBoids() {
         this.createBoids(this.boidsCount);
     }
 

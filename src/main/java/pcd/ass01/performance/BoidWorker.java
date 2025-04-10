@@ -1,5 +1,8 @@
 package pcd.ass01.performance;
 
+import pcd.ass01.Coordinator;
+import pcd.ass01.WorkerBarrier;
+
 public final class BoidWorker implements Runnable {
 
     private final BoidsModel model;
