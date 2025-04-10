@@ -2,6 +2,8 @@ package pcd.ass01.jpf;
 
 import java.util.ArrayList;
 import java.util.List;
+import pcd.ass01.P2d;
+import pcd.ass01.V2d;
 
 public class BoidsModel {
 
@@ -38,7 +40,7 @@ public class BoidsModel {
         createBoids();
     }
 
-    public synchronized void createBoids() {
+    public void createBoids() {
         boids.clear();
         for (int i = 0; i < this.counterBoids; i++) {
         	P2d pos = new P2d(-width/2 + Math.random() * width, -height/2 + Math.random() * height);
@@ -47,7 +49,7 @@ public class BoidsModel {
         }
     }
     
-    public synchronized List<Boid> getBoids(){
+    public List<Boid> getBoids(){
     	return boids;
     }
     

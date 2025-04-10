@@ -2,7 +2,7 @@ package pcd.ass01.jpf;
 
 public class BoidsSimulation {
 
-	final static int N_BOIDS = 100;
+	final static int N_BOIDS = 55;
 	final static double SEPARATION_WEIGHT = 1.0;
     final static double ALIGNMENT_WEIGHT = 1.0;
     final static double COHESION_WEIGHT = 1.0;
@@ -12,7 +12,7 @@ public class BoidsSimulation {
     static final double PERCEPTION_RADIUS = 50.0;
     static final double AVOID_RADIUS = 20.0;
 
-	final static int NUM_THREADS = Runtime.getRuntime().availableProcessors() + 1;
+	final static int NUM_THREADS = 3;
 
 	public static void main(String[] args) {
 		BoidsModel model = new BoidsModel(N_BOIDS,

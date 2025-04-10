@@ -2,6 +2,8 @@ package pcd.ass01.jpf;
 
 import java.util.ArrayList;
 import java.util.List;
+import pcd.ass01.Coordinator;
+import pcd.ass01.WorkerBarrier;
 
 public class ConcurrentBoidsSimulator {
 
@@ -27,15 +29,16 @@ public class ConcurrentBoidsSimulator {
         workers = new ArrayList<>();
 
         createAndStartWorkers();
-        runMainSimulationLoop();
+        for(int k = 0; k < 3; k++) {
+            syncMonitor.waitWorkers();
 
-        // After stopping the simulation, ensure all workers are terminated
-        syncMonitor.coordinatorDone();
-
+            syncMonitor.coordinatorDone();
+        }
     }
 
     private void createAndStartWorkers() {
-        int totalBoids = model.getBoids().size();
+        List<Boid> boids = model.getBoids();
+        int totalBoids = boids.size();
         int boidsPerThread = totalBoids / numThreads;
         int remainingBoids = totalBoids % numThreads;
 
@@ -44,24 +47,11 @@ public class ConcurrentBoidsSimulator {
             int boidsForThisThread = boidsPerThread + (i < remainingBoids ? 1 : 0);
             int endIndex = startIndex + boidsForThisThread;
 
-            BoidsWorker worker = new BoidsWorker(model, startIndex, endIndex, syncMonitor, workerBarrier);
+            BoidsWorker worker = new BoidsWorker(model, boids.subList(startIndex, endIndex) , syncMonitor, workerBarrier);
             workers.add(worker);
             worker.start();
 
             startIndex = endIndex;
         }
     }
-
-    private void runMainSimulationLoop() {
-        for(int k = 0; k<5; k++) {
-            //long frameStartTime = System.currentTimeMillis();
-
-            syncMonitor.waitWorkers();
-
-            //updateViewAndManageFramerate(frameStartTime);
-
-            syncMonitor.coordinatorDone();
-        }
-    }
-
 }

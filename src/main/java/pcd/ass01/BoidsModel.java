@@ -35,7 +35,7 @@ public class BoidsModel {
         boids = new ArrayList<>();
     }
 
-    public synchronized void createBoids(int nboids) {
+    public void createBoids(int nboids) {
         this.boidsCount = nboids;
         boids.clear();
         for (int i = 0; i < nboids; i++) {
@@ -45,7 +45,7 @@ public class BoidsModel {
         }
     }
     
-    public synchronized List<Boid> getBoids(){
+    public List<Boid> getBoids(){
     	return boids;
     }
     
@@ -109,7 +109,7 @@ public class BoidsModel {
     	return perceptionRadius;
     }
 
-    public synchronized void resetBoids() {
+    public void resetBoids() {
         createBoids(boidsCount);
     }
 }

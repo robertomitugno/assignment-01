@@ -3,6 +3,8 @@ package pcd.ass01.performance;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import pcd.ass01.Coordinator;
+import pcd.ass01.WorkerBarrier;
 
 public class ConcurrentBoidsSimulator {
 
